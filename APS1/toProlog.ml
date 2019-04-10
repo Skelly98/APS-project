@@ -50,8 +50,7 @@ let rec print_args l =
     |ASTArgs(a,al) -> 
       print_arg a;
       Printf.printf", "; 
-      print_args al; 
-      Printf.printf")"
+      print_args al
 
 
 
@@ -198,9 +197,9 @@ let rec print_expr e =
       )
       |ASTCall(id,exprs) ->(
         Printf.printf("call(");
-        Printf.printf"%s," id;
+        Printf.printf"%s,[" id;
         print_exprs exprs;
-        Printf.printf") "
+        Printf.printf"]) "
       )
 
     and print_block b =

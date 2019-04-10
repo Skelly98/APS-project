@@ -50,7 +50,7 @@ open Ast
     |FUN REC IDENT type_ LSQUARE args RSQUARE expr { ASTFunRec($3,$4,$6,$8)} 
     | VAR IDENT type_ { ASTVar($2,$3) }
     | PROC IDENT LSQUARE args RSQUARE block { ASTProc($2,$4,$6) }
-    | PROC REC IDENT LSQUARE args RSQUARE block { ASTProc($3,$5,$7) }
+    | PROC REC IDENT LSQUARE args RSQUARE block { ASTProcRec($3,$5,$7) }
 
 
   type_ :

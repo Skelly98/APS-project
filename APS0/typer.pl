@@ -28,7 +28,7 @@ typeExpr(G,sub(X,Y),int) :- typeExpr(G,X,int), typeExpr(G,Y,int).
 typeExpr(G,mul(X,Y),int) :- typeExpr(G,X,int), typeExpr(G,Y,int).
 typeExpr(G,div(X,Y),int) :- typeExpr(G,X,int), typeExpr(G,Y,int).
 typeExpr(G,if(X,Y,Z),T) :- typeExpr(G,X,bool),typeExpr(G,Y,T),typeExpr(G,Z,T). %if
-typeExpr(G,abs(args(A),E),arrow(Types,Type)) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeExpr(NewContext,E,Type),compare(=,ArgsRes,Types). %abs 
+typeExpr(G,abs(args(A),E),arrow(_,Type)) :- appendContext(A,G,NewContext),typeExpr(NewContext,E,Type). %abs 
 typeExpr(G,app(E,L),T) :- appTypeExpr(G,L,[],TypeRes),typeExpr(G,E,arrow(TypeRes,T)).
 
 

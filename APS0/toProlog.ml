@@ -49,8 +49,7 @@ let rec print_args l =
     |ASTArgs(a,al) -> 
       print_arg a;
       Printf.printf", "; 
-      print_args al; 
-      Printf.printf")"
+      print_args al
 
 
 
