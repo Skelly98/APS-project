@@ -14,12 +14,6 @@ let rec print_list = function
 | (x,_)::l ->  Printf.printf "%s\n" x ;print_list l
 
 
-let rec putInEnv n v1 env =
-  match env with
-  [] -> (n,v1)::env
-  |(name,v)::t -> if name = n then (name,v1)::(List.remove_assoc name env)
-                    else putInEnv n v1 t
-
 let rec inEnv x env =
   match env with
   [] -> failwith ("l'id "^x^" n'existe pas")
@@ -69,10 +63,9 @@ let rec eval_expr e env =
             eval_expr e (List.append (List.combine param vals_list) env_)
           )
           |InFR(nom,e,param,env_) ->  (
-            eval_expr e (List.append (List.combine param vals_list)  ((nom,InF(e,param,env_))::env_ ) )
+                   eval_expr e (List.append (List.combine param vals_list)  ((nom,(inEnv nom env))::env_ ) ) 
           )
           |_ -> failwith "pas une fonction"
-        
     )
 
     (*recupere list valeur*)
@@ -105,7 +98,7 @@ and eval_op op e1 e2 env =
       else InN(0)
     )
     | Lt -> (
-      if int_of_value (eval_expr e1 env) <= int_of_value(eval_expr e2 env) then (*<= ?*)
+      if int_of_value (eval_expr e1 env) < int_of_value(eval_expr e2 env) then 
         InN(1)
       else InN(0)
     )
@@ -118,9 +111,9 @@ and eval_stat s env =
 
 and eval_dec d env = 
     match d with
-      ASTConst(name, t, e) -> putInEnv name (eval_expr e env) env
-|ASTFun(name, t, a, e) ->  putInEnv name (InF(e, (getNameArgs [] a),env)) env
-|ASTFunRec(name, t, a, e) -> putInEnv name (InFR(name, e, (getNameArgs [] a),env)) env
+      ASTConst(name, t, e) -> (name,(eval_expr e env))::env
+|ASTFun(name, t, a, e) ->  (name,InF(e,(getNameArgs [] a),env))::env
+|ASTFunRec(name, t, a, e) ->(name,InFR(name, e, (getNameArgs [] a),env))::env
 
 and eval_cmds cs env = 
     match cs with
