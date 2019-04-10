@@ -149,7 +149,7 @@ let rec print_expr e =
         print_type t;
         Printf.printf")"
       |ASTProc (id,a,b) ->
-        Printf.printf"funProc(";
+        Printf.printf"proc(";
         Printf.printf"%s," id;
         Printf.printf"args([";
         print_args a;
@@ -158,7 +158,7 @@ let rec print_expr e =
         print_block b;
         Printf.printf")"
       |ASTProcRec (id,a,b) ->
-        Printf.printf"funProcRec(";
+        Printf.printf"procRec(";
         Printf.printf"%s," id;
         Printf.printf"args([";
         print_args a;

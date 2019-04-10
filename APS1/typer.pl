@@ -35,6 +35,8 @@ typeExpr(G,app(E,L),T) :- appTypeExpr(G,L,[],TypeRes),typeExpr(G,E,arrow(TypeRes
 typeDec(G,const(X,T,E),[(Z,T) | G]) :- typeExpr(G,E,T),atom_string(X,Z). %const
 typeDec(G,fun(X,T,args(A),E),[(Z,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeExpr(NewContext,E,T),atom_string(X,Z).
 typeDec(G,funRec(X,T,args(A),E),[(Z,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),atom_string(X,Z),typeExpr([ (Z,arrow(ArgsRes,T)) | NewContext],E,T).
+typeDec(G,var(X,T),[(Z,T) | G ]) :- atom_string(X,Z).
+typeDec(G,proc(X,args(A),CMDS),[(X,arrow(ArgsRes,void))| G]) :- appArg(A,[],ArgsRes),atom_string(X,Z).
 
 typeCmds(_,[],void).
 typeCmds(G,[S|CS],void) :- typeStat(G,S,void), typeCmds(G,CS,void).
