@@ -4,6 +4,7 @@ let rec print_type type_ =
   match type_ with
     ASTInt ->    Printf.printf"int";
     |ASTBool ->  Printf.printf"bool";
+    |ASTVoid -> Printf.printf"void";
     |ASTArrow(ts,t) ->
       Printf.printf"arrow(";
       print_types ts;
@@ -110,7 +111,7 @@ let rec print_expr e =
       print_exprs l
     )
 
-  let print_dec d =
+  let rec print_dec d =
     match d with
       ASTConst(name, t, e) ->  (
         Printf.printf"const(";
@@ -142,16 +143,74 @@ let rec print_expr e =
         Printf.printf",";
         print_expr e;
         Printf.printf")"
+      |ASTVar (id,t) ->
+        Printf.printf"var(";
+        Printf.printf"%s," id;
+        print_type t;
+        Printf.printf")"
+      |ASTProc (id,a,b) ->
+        Printf.printf"funProc(";
+        Printf.printf"%s," id;
+        Printf.printf"args([";
+        print_args a;
+        Printf.printf"])";
+        Printf.printf",";
+        print_block b;
+        Printf.printf")"
+      |ASTProcRec (id,a,b) ->
+        Printf.printf"funProcRec(";
+        Printf.printf"%s," id;
+        Printf.printf"args([";
+        print_args a;
+        Printf.printf"])";
+        Printf.printf",";
+        print_block b;
+        Printf.printf")"
 
-  let print_stat s =
+  and print_stat s =
     match s with
       ASTEcho e -> (
         Printf.printf("echo(");
         print_expr e;
         Printf.printf(")")
       )
+      |ASTSet(id,e) -> (
+        Printf.printf"set(";
+        Printf.printf"%s," id;
+        print_expr e;
+        Printf.printf")"
+      )
+      |ASTIF(e,b1,b2) -> (
+        Printf.printf"if1(";
+        print_expr e;
+        Printf.printf" , ";
+        print_block b1;
+        Printf.printf" , ";
+        print_block b2;
+        Printf.printf") "
+      )
+      |ASTWhile(e,b) -> (
+        Printf.printf("while(");
+        print_expr e;
+        Printf.printf" , ";
+        print_block b;
+        Printf.printf") "
+      )
+      |ASTCall(id,exprs) ->(
+        Printf.printf("call(");
+        Printf.printf"%s," id;
+        print_exprs exprs;
+        Printf.printf") "
+      )
 
-  let rec print_cmds c =
+    and print_block b =
+      match b with
+      ASTBlock cmds ->(
+      Printf.printf("block(cmds([");
+      print_cmds cmds;
+      Printf.printf("]))")
+      )
+  and print_cmds c =
     match c with 
       ASTStat s -> (
         print_stat s
@@ -167,6 +226,8 @@ let rec print_expr e =
         print_cmds cmds
       )
 
+
+
   let print_prog p = 
     match p with 
       ASTProg cmds -> (
@@ -174,39 +235,6 @@ let rec print_expr e =
         print_cmds cmds;
         Printf.printf("]))")
       )
-
-
-  
-  
-(*  let _ =
-    let arr = Sys.readdir "aps0" in
-      let rec loop l =
-        match l with
-          [] -> exit 0
-          | s::t -> 
-            let oc = open_in "aps0/"^s in 
-            let lexbuf = Lexing.from_channel oc in
-            let p = Parser.prog Lexer.token lexbuf in
-              print_prog p;
-              print_char '\n'
-              with Lexer.Eof -> loop t
-           ;; 
-      in loop arr *)
-        
-(*let _ =
-    let arr = Sys.readdir "aps0" in
-      let rec loop i =
-          if i < Array.length arr then
-          let oc = open_in "aps0/"^(Array.get arr i) in 
-          let lexbuf = Lexing.from_channel oc in
-          let p = Parser.prog Lexer.token lexbuf in
-              print_prog p;
-              print_char '\n'
-              with Lexer.Eof -> loop (i+1)
-          else
-            exit 0
-      in loop 0
-*)
 
 let rec print_list = function 
 [] -> exit 0

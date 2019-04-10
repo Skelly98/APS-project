@@ -147,7 +147,7 @@ print_list (List.combine l1 l2)
 
 let rec eval_list = function 
 [] -> exit 0
-| e::l ->   let oc = open_in ("exemple/"^e) in 
+| e::l ->   let oc = open_in ("aps0/"^e) in 
             let lexbuf = Lexing.from_channel oc in
             let p = Parser.prog Lexer.token lexbuf in
               print_string e;
@@ -157,7 +157,7 @@ let rec eval_list = function
               eval_list l
 
 let _ = 
-  let arr = Sys.readdir "exemple" in
+  let arr = Sys.readdir "aps0" in
     eval_list (Array.to_list arr)
         
      
