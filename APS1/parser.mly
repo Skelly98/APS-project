@@ -90,6 +90,6 @@ open Ast
     | LPAR NOT expr RPAR { ASTUnary(Ast.Not, $3) }
     | LSQUARE args RSQUARE expr { ASTAbs($2,$4) }
     | LPAR expr exprs RPAR { ASTApp($2,$3) }    
-    | LPAR IF expr expr expr  RPAR { ASTIf($3,$4,$5) }
+    | LPAR if expr expr expr  RPAR { ASTIf($3,$4,$5) }
 
   ;

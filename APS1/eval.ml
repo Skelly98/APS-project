@@ -131,33 +131,53 @@ and eval_op op e1 e2 env =
       else InN(0)
     )
 
-and eval_stat s env =
+and eval_stat s env mem =
     match s with
     ASTEcho e -> ( match eval_expr e env with
-                   InN(n) -> print_int n)
-                   |_ -> failwith "ne s'applique que sur les entiers"
+                   InN(n) -> print_int n
+                   |_ -> failwith "echo ne s'applique que sur les entiers")
+ 	|ASTSet(var,e) -> failwith "todo utilise la mem donc je l'ai rajouté dans les parametres des eval en amont"
+ 	|ASTIF(cond,b1,b2) -> (
+        if int_of_value (eval_expr cond env) = 1 then
+          eval_block b1 env mem
+        else
+          eval_block b2 env mem
+    )
+ 	|ASTWhile(cond,b) -> (
+ 		let rec loop()=
+ 			if int_of_value (eval_expr cond env) = 1 then
+ 				eval_block b env mem
+ 				loop()
+ 		)
 
-and eval_dec d env = 
+ 	|ASTCall(name,p) -> failwith "todo"
+
+
+and eval_dec d env= 
     match d with
       ASTConst(name, t, e) -> (name,(eval_expr e env))::env
 |ASTFun(name, t, a, e) ->  (name,InF(e,(getNameArgs [] a),env))::env
 |ASTFunRec(name, t, a, e) ->(name,InFR(name, e, (getNameArgs [] a),env))::env
 
-and eval_cmds cs env = 
+and eval_block b env mem=
+	match b with
+		ASTBlock(cs) -> eval_cmds cs env mem
+
+and eval_cmds cs env mem = 
     match cs with
-      ASTStat s -> eval_stat s env
+      ASTStat s -> eval_stat s env mem
       |ASTDecCmds (d , cmds) -> (
         let newEnv = eval_dec d env in
-          eval_cmds cmds newEnv
+          eval_cmds cmds newEnv mem
       )
       |ASTStatCmds (s , cmds) -> (
-          eval_stat s env;
-          eval_cmds cmds env
+          eval_stat s env mem;
+          eval_cmds cmds env mem
       )
 
-and eval_prog p env =
+and eval_prog p env mem =
   match p with
-    ASTProg cmds -> eval_cmds cmds env
+    ASTProg cmds -> eval_cmds cmds env mem
 
 (*
 let _=  Printf.printf"not false = %s\n" (string_of_int (int_of_value (eval_expr (ASTUnary(Not,ASTFalse)) [])));
@@ -180,7 +200,7 @@ let rec eval_list = function
             let p = Parser.prog Lexer.token lexbuf in
               print_string e;
               print_char '\n';
-              eval_prog p [];
+              eval_prog p [] [];
               print_char '\n';
               eval_list l
 
