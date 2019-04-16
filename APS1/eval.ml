@@ -1,8 +1,36 @@
 open Ast
 
-type valeur = InN of int | InF of expr * string list * env | InFR of string * expr * string list * env
-    
+type valeur = InN of int (* valeurs immédiates*) 
+            | InF of expr * string list * env (* fermeture *)
+            | InFR of string * expr * string list * env (* fermeture récursive*)
+            | InA of string (* adresse *)
+            | InP of block * string list * env (* fermeture procédurale*)
+
+
 and env  = (string * valeur) list 
+
+type memoire = (valeur * valeur) list
+
+let string_of_ina  a = 
+  match a with 
+  InA s -> s
+  |_ ->  failwith ("value is not an adress")
+
+let adress_inMem mem a =
+  match mem with
+  |[] -> false
+  (InA(s),InN(_)) ::t -> if s == (string_of_ina a) then true else adress_inMem t a
+  |_ ->  failwith ("invalid format for mem")
+
+let alloc mem a = 
+  if adress_inMem mem a 
+    then (a,InN(-1))::mem
+    else failwith ("adress already in use")
+
+let writeInMem mem a v =
+  if adress_inMem mem a then
+     
+
 
 let int_of_value v =
   match v with
