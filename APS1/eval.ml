@@ -18,41 +18,30 @@ let string_of_ina  a =
   InA s -> s
   |_ ->  failwith ("value is not an adress")
 
-let rec adress_inMem mem a =
-  match mem with
-  [] -> false
-  |(InA(s),InN(_)) ::t -> if s == a then true else adress_inMem t a
-  |_ ->  failwith ("invalid format for mem")
-
+  
 let alloc mem = 
-  let a = "a"^(string_of_int !adress_id) in
-  if not (adress_inMem mem a)
-    then (InA(a),InN(-42))::mem
-    else failwith ("adress already in use")
+  let a = "a"^(string_of_int !adress_id) in (InA(a),InN(-42))::mem (* -42 par défaut *)
+    
 
 
 let rec value_of_ina mem a =
   match mem with 
-  [] -> failwith("address undefined : value")
-  |(InA(s),v) ::t -> if compare s (string_of_ina a) = 0 
-                            then v 
-                            else value_of_ina t a 
+  [] -> failwith("address undefined : value : "^(string_of_ina a))
+  |(InA(s),v) ::t -> if (string_of_ina a) = s
+                      then v 
+                      else value_of_ina t a 
 
 
 let rec writeInMem mem a v =
   match mem with
-  [] -> failwith("address undefined : write")
-  |(InA(s),InN(_)) ::t -> if compare s (string_of_ina a) = 0 
-                           then let newMem = (List.remove_assoc (InA(s)) mem) in (InA(s),v)::newMem
+  [] -> failwith("address undefined : write : "^(string_of_ina a))
+  |(InA(s),InN(_)) ::t -> if (string_of_ina a) = s
+                           then (InA(s),v)::mem
                            else writeInMem t a v                            
 let int_of_value v =
   match v with
     InN v -> v
     |_ -> failwith("valeurs immediates")
-
-
- 
-
                                 
 let rec print_list = function 
 [] -> ()
@@ -154,16 +143,16 @@ and eval_op op e1 e2 env mem=
 and eval_stat s env mem =
     match s with
     ASTEcho e -> ( match eval_expr e env mem with
-                   InN(n) -> print_int n;mem
+                   InN(n) -> print_int n; print_string "\n"; mem
                    |_ -> failwith "ne s'applique que sur les entiers")
     |ASTSet(name,e) -> let val_ = inEnv name env in let eval_e = eval_expr e env mem in
                         (match val_ with 
-                          InA(s) -> writeInMem mem (InA(s)) eval_e
+                          InA(s) -> (InA(s),eval_e)::mem
                           |_ -> failwith (name^" not declared as a variable")
                         )
     |ASTIF(e,bk1,bk2) ->  if int_of_value (eval_expr e env mem) = 1 
-                          then let mem_ = eval_block bk1 env mem in mem_
-                          else let mem_ = eval_block bk2 env mem in mem_
+                          then eval_block bk1 env mem
+                          else eval_block bk2 env mem
     |ASTWhile(e,bk) ->  if int_of_value (eval_expr e env mem) = 1 
                             then let mem_= eval_block bk env mem in
                             eval_stat s env mem_
@@ -182,10 +171,9 @@ and eval_dec d env mem =
       |ASTFun(name, t, a, e) ->  ((name,InF(e,(getNameArgs [] a),env))::env,mem)
       |ASTFunRec(name, t, a, e) ->((name,InFR(name, e, (getNameArgs [] a),env))::env,mem)
       |ASTVar(name,t) -> let mem_ = alloc mem in
-                          let temp = ! adress_id in 
+                          let (x,y) = ((name,InA("a"^(string_of_int !adress_id)))::env,mem_) in
                           adress_id := !adress_id +1;
-                          print_string name;
-                          ((name,InA("a"^(string_of_int temp)))::env,mem_)
+                          (x,y)
       |ASTProc(name,a,bk) -> ((name,InP(bk,(getNameArgs [] a),env))::env,mem)
       |ASTProcRec(name,a,bk) -> ((name,InPR(name, bk, (getNameArgs [] a),env))::env,mem)
                         
