@@ -174,39 +174,6 @@ let rec print_expr e =
         Printf.printf("]))")
       )
 
-
-  
-  
-(*  let _ =
-    let arr = Sys.readdir "aps0" in
-      let rec loop l =
-        match l with
-          [] -> exit 0
-          | s::t -> 
-            let oc = open_in "aps0/"^s in 
-            let lexbuf = Lexing.from_channel oc in
-            let p = Parser.prog Lexer.token lexbuf in
-              print_prog p;
-              print_char '\n'
-              with Lexer.Eof -> loop t
-           ;; 
-      in loop arr *)
-        
-(*let _ =
-    let arr = Sys.readdir "aps0" in
-      let rec loop i =
-          if i < Array.length arr then
-          let oc = open_in "aps0/"^(Array.get arr i) in 
-          let lexbuf = Lexing.from_channel oc in
-          let p = Parser.prog Lexer.token lexbuf in
-              print_prog p;
-              print_char '\n'
-              with Lexer.Eof -> loop (i+1)
-          else
-            exit 0
-      in loop 0
-*)
-
 let rec print_list = function 
 [] -> exit 0
 | e::l ->   let oc = open_in ("exemple/"^e) in 

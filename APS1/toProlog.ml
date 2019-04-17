@@ -237,7 +237,7 @@ let rec print_expr e =
 
 let rec print_list = function 
 [] -> exit 0
-| e::l ->   let oc = open_in ("exemple/aps1/"^e) in 
+| e::l ->   let oc = open_in ("exemple/"^e) in 
             let lexbuf = Lexing.from_channel oc in
             let p = Parser.prog Lexer.token lexbuf in
               print_string e;
@@ -247,7 +247,7 @@ let rec print_list = function
               print_list l
 
 let _ = 
-  let arr = Sys.readdir "exemple/aps1" in
+  let arr = Sys.readdir "exemple" in
     print_list (Array.to_list arr)
   
 

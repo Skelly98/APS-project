@@ -131,19 +131,6 @@ and eval_prog p env =
   match p with
     ASTProg cmds -> eval_cmds cmds env
 
-(*
-let _=  Printf.printf"not false = %s\n" (string_of_int (int_of_value (eval_expr (ASTUnary(Not,ASTFalse)) [])));
-(*Printf.printf"f = %s\n" (string_of_int (int_of_value (eval_expr (ASTApp(ASTPrim(Add,ASTId("x"),ASTNum(5)),ASTExpr(ASTNum(3)))) [("x",InN(5))])));*)
-let e =  eval_dec (ASTFun("fun1",ASTInt,ASTArg(ASTColon("x",ASTInt)),ASTNum(4))) [] in let e1 =  eval_dec (ASTConst("var1",ASTInt,ASTNum(3))) e in print_list e1 ;
-let _= 
-let l1 = [1;3;4] in
-let l2 = ["a";"b";"c"] in
-print_list (List.combine l1 l2)
-
-*)
-
-
-
 
 let rec eval_list = function 
 [] -> exit 0
