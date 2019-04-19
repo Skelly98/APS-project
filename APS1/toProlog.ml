@@ -19,11 +19,11 @@ and print_types l =
     print_type t;
     Printf.printf"]"
   |ASTTypes(t,ts) -> (
-      Printf.printf"etoile([";
+      Printf.printf"[";
       print_type t;
       Printf.printf",";
       print_types_aux ts;
-      Printf.printf"])"
+      Printf.printf"]"
   )
 
 and print_types_aux tips =

@@ -7,9 +7,6 @@ appArg([arg(_,T) | A],List, [T|Result]) :- appArg(A,List,Result).
 appendContext([],List,List).
 appendContext([arg(X,T) | A],List, [(Z,T)|Result]) :- appendContext(A,List,Result),atom_string(X,Z).
 
-appEtoile(etoile(Head,Tail),List,[Head | Result]) :- appEtoile(Tail,List,Result).
-appEtoile(T,List,[T | List]).
-
 appTypeExpr(G,[E |Tail],List,[T | Result]) :- typeExpr(G,E,T),appTypeExpr(G,Tail,List,Result).
 appTypeExpr(_,[],List,List).
 

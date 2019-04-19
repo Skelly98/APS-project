@@ -23,11 +23,11 @@ and print_types l =
     print_type t;
     Printf.printf"]"
   |ASTTypes(t,ts) -> (
-      Printf.printf"etoile([";
+      Printf.printf"[";
       print_type t;
       Printf.printf",";
       print_types_aux ts;
-      Printf.printf"])"
+      Printf.printf"]"
   )
 
 and print_types_aux tips =
@@ -44,7 +44,7 @@ let print_arg a =
   match a with
     ASTColon(name,t) -> 
       Printf.printf"arg(";
-      Printf.printf"%s," name;
+      Printf.printf"\"%s\"," name;
       print_type t;
       Printf.printf")"
 
@@ -118,7 +118,7 @@ let rec print_expr e =
     match d with
       ASTConst(name, t, e) ->  (
         Printf.printf"const(";
-        Printf.printf"%s," name;
+        Printf.printf"\"%s\"," name;
         print_type t;
         Printf.printf",";
         print_expr e;
@@ -126,7 +126,7 @@ let rec print_expr e =
       )
       |ASTFun(name, t, a, e) -> 
         Printf.printf"fun(";
-        Printf.printf"%s," name;
+        Printf.printf"\"%s\"," name;
         print_type t;
         Printf.printf",";
         Printf.printf"args([";
@@ -137,7 +137,7 @@ let rec print_expr e =
         Printf.printf")"
       |ASTFunRec(name, t, a, e) ->
         Printf.printf"funRec(";
-        Printf.printf"%s," name;
+        Printf.printf"\"%s\"," name;
         print_type t;
         Printf.printf",";
         Printf.printf"args([";
@@ -148,12 +148,12 @@ let rec print_expr e =
         Printf.printf")"
       |ASTVar (id,t) ->
         Printf.printf"var(";
-        Printf.printf"%s," id;
+        Printf.printf"\"%s\"," id;
         print_type t;
         Printf.printf")"
       |ASTProc (id,a,b) ->
         Printf.printf"proc(";
-        Printf.printf"%s," id;
+        Printf.printf"\"%s\"," id;
         Printf.printf"args([";
         print_args a;
         Printf.printf"])";
@@ -162,7 +162,7 @@ let rec print_expr e =
         Printf.printf")"
       |ASTProcRec (id,a,b) ->
         Printf.printf"procRec(";
-        Printf.printf"%s," id;
+        Printf.printf"\"%s\"," id;
         Printf.printf"args([";
         print_args a;
         Printf.printf"])";
@@ -202,7 +202,7 @@ let rec print_expr e =
       )
       |ASTCall(id,exprs) ->(
         Printf.printf("call(");
-        Printf.printf"%s,[" id;
+        Printf.printf"\"%s\" ,[" id;
         print_exprs exprs;
         Printf.printf"]) "
       )
@@ -232,7 +232,7 @@ let rec print_expr e =
 
       and print_lval lv = 
       match lv with
-      ASTLvalId name ->  Printf.printf"%s" name
+      ASTLvalId name ->  Printf.printf"\"%s\"" name
       |ASTLvalNth (lval,e) ->  
         Printf.printf"nth(";
         print_lval lval;

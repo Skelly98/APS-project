@@ -7,17 +7,12 @@ appArg([arg(_,T) | A],List, [T|Result]) :- appArg(A,List,Result).
 appendContext([],List,List).
 appendContext([arg(X,T) | A],List, [(Z,T)|Result]) :- appendContext(A,List,Result),atom_string(X,Z).
 
-appEtoile(etoile(Head,Tail),List,[Head | Result]) :- appEtoile(Tail,List,Result).
-appEtoile(T,List,[T | List]).
-
 appTypeExpr(G,[E |Tail],List,[T | Result]) :- typeExpr(G,E,T),appTypeExpr(G,Tail,List,Result).
 appTypeExpr(_,[],List,List).
 
 
 typeExpr(_,true,bool).
 typeExpr(_,false,bool).
-typeExpr(_,X,int) :- integer(X). %num
-typeExpr(G,X,T) :- string(X),assoc(X,G,T). %sym
 typeExpr(G,not(X),bool) :- typeExpr(G,X,bool). 
 typeExpr(G,and(X,Y),bool) :- typeExpr(G,X,bool), typeExpr(G,Y,bool).
 typeExpr(G,or(X,Y),bool) :- typeExpr(G,X,bool), typeExpr(G,Y,bool).
@@ -29,21 +24,30 @@ typeExpr(G,mul(X,Y),int) :- typeExpr(G,X,int), typeExpr(G,Y,int).
 typeExpr(G,div(X,Y),int) :- typeExpr(G,X,int), typeExpr(G,Y,int).
 typeExpr(G,if(X,Y,Z),T) :- typeExpr(G,X,bool),typeExpr(G,Y,T),typeExpr(G,Z,T). %if
 typeExpr(G,abs(args(A),E),arrow(_,Type)) :- appendContext(A,G,NewContext),typeExpr(NewContext,E,Type). %abs 
-typeExpr(G,app(E,L),T) :- appTypeExpr(G,L,[],TypeRes),typeExpr(G,E,arrow(TypeRes,T)).
+typeExpr(G,app(E,L),T) :- appTypeExpr(G,L,[],TypeRes),typeExpr(G,E,arrow(TypeRes,T)). %app
+typeExpr(G,alloc(X),vec(_)) :- typeExpr(G,X,int). %alloc
+typeExpr(G,len(X),int) :- typeExpr(G,X,vec(_)). %len
+typeExpr(G,nth(X,Y),T) :- typeExpr(G,X,vec(T)),typeExpr(G,Y,int). %nth
+typeExpr(_,X,int) :- integer(X). %num
+typeExpr(G,X,T) :- string(X),assoc(X,G,T). %sym
 
+%CONST
+typeDec(G,const(X,T,E),[(X,T) | G]) :- typeExpr(G,E,T). 
 
-typeDec(G,const(X,T,E),[(Z,T) | G]) :- typeExpr(G,E,T),atom_string(X,Z). %const
-typeDec(G,fun(X,T,args(A),E),[(Z,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeExpr(NewContext,E,T),atom_string(X,Z).
-typeDec(G,funRec(X,T,args(A),E),[(Z,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),atom_string(X,Z),typeExpr([ (Z,arrow(ArgsRes,T)) | NewContext],E,T).
+%FUN
+typeDec(G,fun(X,T,args(A),E),[(X,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeExpr(NewContext,E,T).
+
+%FUNREC
+typeDec(G,funRec(X,T,args(A),E),[(X,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeExpr([(X,arrow(ArgsRes,T)) | NewContext],E,T).
 
 %VAR
-typeDec(G,var(X,T),[(Z,T) | G ]) :- atom_string(X,Z).
+typeDec(G,var(X,T),[(X,T) | G ]).
 
 %PROC
-typeDec(G,proc(X,args(A),block(cmds(CS))),[(Z,arrow(ArgsRes,void))| G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),atom_string(X,Z),typeCmds( NewContext,CS,void).
+typeDec(G,proc(X,args(A),block(cmds(CS))),[(X,arrow(ArgsRes,void))| G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeCmds( NewContext,CS,void).
 
 %PROCREC
-typeDec(G,procRec(X,args(A),block(cmds(CS))),[(Z,arrow(ArgsRes,void))| G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),atom_string(X,Z),typeCmds([(Z,arrow(ArgsRes,void))|NewContext],CS,void).
+typeDec(G,procRec(X,args(A),block(cmds(CS))),[(X,arrow(ArgsRes,void))| G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeCmds([(X,arrow(ArgsRes,void))|NewContext],CS,void).
 
 
 typeCmds(_,[],void).
@@ -53,8 +57,8 @@ typeCmds(G,[D|CS],void) :- typeDec(G,D,NG), typeCmds(NG,CS,void).
 %ECHO
 typeStat(G,echo(X),void) :- typeExpr(G,X,int).
 
-%SET
-typeStat(G,set(ID,E),void) :- atom_string(ID,X),assoc(X,G,T),typeExpr(G,E,T).
+%SET %APS2
+typeStat(G,set(LVAL,E),void) :- typeExpr(G,LVAL,T),typeExpr(G,E,T).
 
 %IF
 typeStat(G,if1(E,block(cmds(Block1)),block(cmds(Block2))),void) :- typeExpr(G,E,bool),typeCmds(G,Block1,void),typeCmds(G,Block2,void).
@@ -63,6 +67,6 @@ typeStat(G,if1(E,block(cmds(Block1)),block(cmds(Block2))),void) :- typeExpr(G,E,
 typeStat(G,while(E,block(cmds(Block))),void) :- typeExpr(G,E,bool),typeCmds(G,Block,void).
 
 %CALL
-typeStat(G,call(ID,L),void) :- appTypeExpr(G,L,[],TypeRes),atom_string(ID,Z),assoc(Z,G,arrow(TypeRes,void)).
+typeStat(G,call(ID,L),void) :- appTypeExpr(G,L,[],TypeRes),atom_string(ID,X),assoc(X,G,arrow(TypeRes,void)).
 
 typeProg(G,prog(cmds(X)),void) :- typeCmds(G,X,void).
