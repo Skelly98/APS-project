@@ -2,7 +2,7 @@ LEX_ML = ocamllex
 YACC_ML = ocamlyacc
 OCAMLC = ocamlc
 
-all : eval toProlog
+all : toProlog
 
 eval: parser eval.ml
 	$(OCAMLC) -o eval ast.cmo lexer.cmo parser.cmo eval.ml
