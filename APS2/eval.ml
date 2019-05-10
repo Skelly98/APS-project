@@ -3,48 +3,60 @@ open Ast
 type valeur = InN of int (* valeurs immédiates*) 
             | InF of expr * string list * env (* fermeture *)
             | InFR of string * expr * string list * env (* fermeture récursive*)
-            | InA of string (* adresse *)
+            | InA of int (* adresse *)
             | InP of block * string list * env (* fermeture procédurale*)
             | InPR of string * block * string list * env (* fermeture récursive*)
+            | InB of valeur * int (* bloc mémoire*)
 
 and env  = (string * valeur) list 
 
 type memoire = (valeur * valeur) list
 
-let adress_id = ref 0
+let adress_id = ref 0 (* incrémente *)
 
-let string_of_ina  a = 
+let int_of_address a = 
   match a with 
-  InA s -> s
-  |_ ->  failwith ("value is not an adress")
+  InA(i) -> i
+  |_ ->failwith("not a valid adress")
 
   
-let alloc mem = 
-  let a = "a"^(string_of_int !adress_id) in (InA(a),InN(-42))::mem (* -42 par défaut *)
+let alloc mem = (InA(!adress_id),InN(-42))::mem (* -42 par défaut *)
+
+let rec allocn_aux mem i =
+      if i>0
+        then let a = !adress_id in adress_id := !adress_id +1; 
+                                                       allocn_aux ((InA(a),InN(-42))::mem) (i-1)
+        else mem
+
+let rec allocn mem n =
+  if n < 0 
+    then failwith("size must no be inferior to 0")
+    else
+    allocn_aux mem n
+    
     
 let rec value_of_ina mem a =
   match mem with 
-  [] -> failwith("address undefined : value : "^(string_of_ina a))
-  |(InA(s),v) ::t -> if (string_of_ina a) = s
-                      then v 
+  [] -> failwith("address undefined : value : "^(string_of_int (int_of_address a)))
+  |(InA(i),v) ::t -> if (int_of_address a) = i 
+                      then v
                       else value_of_ina t a 
-
 
 let rec writeInMem mem a v =
   match mem with
-  [] -> failwith("address undefined : write : "^(string_of_ina a))
-  |(InA(s),InN(_)) ::t -> if (string_of_ina a) = s
-                           then (InA(s),v)::mem
-                           else writeInMem t a v                            
+  [] -> failwith("address undefined : write : "^(string_of_int (int_of_address a)))
+  |(InA(i),_) :: t -> if  (int_of_address a) = i 
+                           then (InA(i),v)
+                           else writeInMem t a v 
+
 let int_of_value v =
   match v with
     InN v -> v
     |_ -> failwith("valeurs immediates")
-                                
+                           
 let rec print_list = function 
 [] -> ()
 | (x,_)::l ->  Printf.printf "%s\n" x ;print_list l
-
 
 let rec inEnv x env =
   match env with
@@ -56,18 +68,20 @@ let rec getNameArgs l args =
   match args with
   ASTArg(a) -> getNameArg a l
   |ASTArgs(a,args) -> (getNameArgs (getNameArg a l) args)
+
 and getNameArg a l =
   match a with 
   ASTColon(s,t) -> s::l
 
 let rec eval_expr e env mem =
   match e with
-    ASTNum n -> InN(n)
-    | ASTTrue -> InN(1)
-    | ASTFalse -> InN(0)
+    ASTNum n -> (InN(n),mem)
+    | ASTTrue -> (InN(1),mem)
+    | ASTFalse -> (InN(0),mem)
     | ASTId x -> (match (inEnv x env) with 
-                   InA s -> value_of_ina mem (InA(s))
-                  | v -> v
+                  InA s -> (value_of_ina mem (InA(s)),mem)
+                  |InB(a,n) -> (InN(-42),mem) (* à faire *)
+                  | v -> (v,mem)
     )
     | ASTPrim (op, e1, e2) -> (
         eval_op op e1 e2 env mem
@@ -75,101 +89,124 @@ let rec eval_expr e env mem =
     | ASTUnary (op, e) -> (
         match op with
           Not -> (
-            if int_of_value (eval_expr e env mem) = 1 then
-              InN(0)
-            else InN(1)
+            let (val_expr,mem_expr) = eval_expr e env mem in
+            if int_of_value (val_expr) = 1 then
+              (InN(0),mem)
+            else (InN(1),mem)
           )
     )
     | ASTIf (cond, e1, e2) -> (
-        if int_of_value (eval_expr cond env mem) = 1 then
-          eval_expr e1 env mem
+      let (cond_val,cond_mem) = eval_expr cond env mem in
+        if int_of_value(cond_val) = 1 then
+          eval_expr e1 env cond_mem
         else
-          eval_expr e2 env mem
+          eval_expr e2 env cond_mem
     )
     | ASTAbs (args, e) -> (
-        InF(e,(getNameArgs [] args),env)
+        (InF(e,(getNameArgs [] args),env),mem)
     )
 
     | ASTApp (e, es) -> (
-      let vals_list = eval_exprs es [] env mem in
-      let eval_e = eval_expr e env mem in
-        match eval_e with
-          InF (e,param,env_)->  (
-            eval_expr e (List.append (List.combine param vals_list) env_) mem
+      let (val_e,val_mem) = eval_expr e env mem in
+      let (vals_list,mem_n) = eval_exprs es [] env val_mem in (*i need a list of the value of each expr and the final state of memory*)
+        match val_e with
+          InF (e,param,env_) ->  (
+            eval_expr e (List.append (List.combine param vals_list) env_) mem_n
           )
-          |InFR(nom,e,param,env_) ->  (
-                   eval_expr e (List.append (List.combine param vals_list)  ((nom,(inEnv nom env))::env_ ) ) mem 
+          |InFR(nom,e,param,env_)->  (
+            eval_expr e (List.append (List.combine param vals_list)  ((nom,(inEnv nom env))::env_ ) ) mem_n
           )
           |_ -> failwith "pas une fonction"
     )
 
-    (*recupere list valeur*)
 and eval_exprs exprs l env mem=
     match exprs with
-    ASTExpr e -> (eval_expr e env mem)::l
-    |ASTExprs_ (e,ex) -> eval_exprs ex (eval_aux_exprs e l env mem) env mem 
-and eval_aux_exprs e l env mem = 
-    (eval_expr e env mem)::l
+    ASTExpr e -> let (v1,final_mem) = eval_expr e env mem in (v1::l,final_mem) (* last expr to be evaluated *)
+    |ASTExprs_ (e,ex) -> let (v,new_mem) = eval_expr e env mem in 
+                        eval_exprs ex (v::l) env new_mem 
 
 and eval_op op e1 e2 env mem=
+  let (v1,m1) = eval_expr e1 env mem in 
+  let (v2,m2) = eval_expr e2 env mem in
   match op with
-    Add -> InN(int_of_value (eval_expr e1 env mem) + int_of_value(eval_expr e2 env mem))
-    | Mul -> InN(int_of_value (eval_expr e1 env mem) * int_of_value(eval_expr e2 env mem))
-    | Sub -> InN(int_of_value (eval_expr e1 env mem) - int_of_value(eval_expr e2 env mem))
-    | Div -> InN(int_of_value (eval_expr e1 env mem) / int_of_value(eval_expr e2 env mem))
+    Add -> (InN(int_of_value (v1) + int_of_value(v2)),mem)
+    | Mul -> (InN(int_of_value (v1) * int_of_value(v2)),mem)
+    | Sub -> (InN(int_of_value (v1) - int_of_value(v2)),mem)
+    | Div -> (InN(int_of_value (v1) / int_of_value(v2)),mem)
     | Or -> (
-        if int_of_value (eval_expr e1 env mem) + int_of_value(eval_expr e2 env mem) > 0 then (*une des deux expr est vraie et vaut 1, donc >0 en tout*)
-          InN(1)
-        else InN(0)
+        if int_of_value (v1) + int_of_value(v2) > 0 then (*une des deux expr est vraie et vaut 1, donc >0 en tout*)
+          (InN(1),mem)
+        else (InN(0),mem)
     )
     | And -> (
-        if int_of_value (eval_expr e1 env mem) + int_of_value(eval_expr e2 env mem) = 2 then (*les deux expr sont vraies donc valent 1 donc 2 en tout*)
-          InN(1)
-        else InN(0)
+        if int_of_value (v1) + int_of_value(v2) = 2 then (*les deux expr sont vraies donc valent 1 donc 2 en tout*)
+          (InN(1),mem)
+        else (InN(0),mem)
     )
     | Eq -> (
-      if int_of_value (eval_expr e1 env mem) = int_of_value(eval_expr e2 env mem) then
-        InN(1)
-      else InN(0)
+      if int_of_value (v1) = int_of_value(v2) then
+        (InN(1),mem)
+      else (InN(0),mem)
     )
     | Lt -> (
-      if int_of_value (eval_expr e1 env mem) < int_of_value(eval_expr e2 env mem) then 
-        InN(1)
-      else InN(0)
+      if int_of_value (v1) < int_of_value(v2) then 
+        (InN(1),mem)
+      else (InN(0),mem)
     )
 
+    (**
+     let val_ = inEnv name env in let eval_e = eval_expr e env mem in
+                        (match val_ with 
+                          InA(i) -> (writeInMem mem (InA(i)) eval_e)::mem
+                          |_ -> failwith (name^" not declared as a variable")
+                        )
+    
+    *)
 and eval_stat s env mem =
     match s with
     ASTEcho e -> ( match eval_expr e env mem with
-                   InN(n) -> print_int n; print_string "\n"; mem
+                   (InN(n),m) -> print_int n; print_string "\n"; m
                    |_ -> failwith "ne s'applique que sur les entiers")
-    |ASTSet(name,e) -> let val_ = inEnv name env in let eval_e = eval_expr e env mem in
-                        (match val_ with 
-                          InA(s) -> (InA(s),eval_e)::mem
-                          |_ -> failwith (name^" not declared as a variable")
-                        )
-    |ASTIF(e,bk1,bk2) ->  if int_of_value (eval_expr e env mem) = 1 
-                          then eval_block bk1 env mem
-                          else eval_block bk2 env mem
-    |ASTWhile(e,bk) ->  if int_of_value (eval_expr e env mem) = 1 
-                            then let mem_= eval_block bk env mem in
+    |ASTSet(lval,e) -> let (eval_e,emem) = eval_expr e env mem in
+                        let (addr,mval) = eval_lval lval env mem in 
+                         (writeInMem mem (InA(addr)) eval_e)::mval
+    |ASTIF(e,bk1,bk2) ->  let (eval_e,emem) = eval_expr e env mem in
+                          if int_of_value (eval_e) = 1 
+                          then eval_block bk1 env emem
+                          else eval_block bk2 env emem
+    |ASTWhile(e,bk) ->  let (eval_e,emem) = eval_expr e env mem in
+                        if int_of_value (eval_e) = 1 
+                            then let mem_= eval_block bk env emem in
                             eval_stat s env mem_
-                            else mem
-    |ASTCall(name,es)->  let vals_list = eval_exprs es [] env mem in
+                            else emem
+    |ASTCall(name,es)->  let (vals_list,v_mem) = eval_exprs es [] env mem in
                           let val_ = inEnv name env in 
                           (match val_ with
-                          InP(bk,param,env_ ) -> eval_block bk (List.append (List.combine param vals_list) env_) mem
+                          InP(bk,param,env_ ) -> eval_block bk (List.append (List.combine param vals_list) env_) v_mem
                           |InPR(name,bk,param,env_) -> 
-                           eval_block bk (List.append (List.combine param vals_list) ((name,(inEnv name env))::env_)) mem
+                           eval_block bk (List.append (List.combine param vals_list) ((name,(inEnv name env))::env_)) v_mem
                            |_ -> failwith "not a procedure"
                           )
+
+and eval_lval lval env mem = 
+  match lval with
+   ASTLvalId name -> let v = inEnv name env in 
+                    (match v with
+                    InA(a) -> (a,mem)
+                    |InB(a,n) -> (int_of_value a,mem))
+  (* |ASTLvalNth(lv,e) -> *)
+
+
+
+
 and eval_dec d env mem = 
     match d with
-      ASTConst(name, t, e) -> ((name,(eval_expr e env mem))::env,mem)
+      ASTConst(name, t, e) -> let (eval_e,emem) = eval_expr e env mem in
+                            ((name,(eval_e))::env,emem)
       |ASTFun(name, t, a, e) ->  ((name,InF(e,(getNameArgs [] a),env))::env,mem)
       |ASTFunRec(name, t, a, e) ->((name,InFR(name, e, (getNameArgs [] a),env))::env,mem)
       |ASTVar(name,t) -> let mem_ = alloc mem in
-                          let (x,y) = ((name,InA("a"^(string_of_int !adress_id)))::env,mem_) in
+                          let (x,y) = ((name,InA(!adress_id))::env,mem_) in
                           adress_id := !adress_id +1;
                           (x,y)
       |ASTProc(name,a,bk) -> ((name,InP(bk,(getNameArgs [] a),env))::env,mem)
