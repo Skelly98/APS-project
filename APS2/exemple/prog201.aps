@@ -7,5 +7,4 @@
       SET (nth xs i) (add i 1);
       SET i (add i 1)
     ]
-    
 ]

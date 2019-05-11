@@ -22,17 +22,22 @@ let int_of_address a =
   
 let alloc mem = (InA(!adress_id),InN(-42))::mem (* -42 par défaut *)
 
-let rec allocn_aux mem i =
-      if i>0
-        then let a = !adress_id in adress_id := !adress_id +1; 
-                                                       allocn_aux ((InA(a),InN(-42))::mem) (i-1)
-        else mem
+let rec allocn_aux a mem i  =
+      if i > 0
+       then let alloc_mem = (InA(a+i-1),InN(-42))::mem in
+            allocn_aux a (alloc_mem) (a+i-1)
+      else mem
 
+
+(*prend une mémoire et un entier en paramètre*)
 let rec allocn mem n =
   if n < 0 
-    then failwith("size must no be inferior to 0")
+    then failwith("size must superior to 0")
     else
-    allocn_aux mem n
+    let a = !adress_id in
+    let res = allocn_aux a mem n in
+    adress_id := !adress_id+n;
+    (InA(a),res)
     
     
 let rec value_of_ina mem a =
@@ -53,6 +58,7 @@ let int_of_value v =
   match v with
     InN v -> v
     |_ -> failwith("valeurs immediates")
+
                            
 let rec print_list = function 
 [] -> ()
@@ -79,9 +85,9 @@ let rec eval_expr e env mem =
     | ASTTrue -> (InN(1),mem)
     | ASTFalse -> (InN(0),mem)
     | ASTId x -> (match (inEnv x env) with 
-                  InA s -> (value_of_ina mem (InA(s)),mem)
-                  |InB(a,n) -> (InN(-42),mem) (* à faire *)
-                  | v -> (v,mem)
+                  InA i -> (value_of_ina mem (InA(i)),mem)
+                  |InB(a,n) -> (a,mem)
+                  | v ->  (v,mem)
     )
     | ASTPrim (op, e1, e2) -> (
         eval_op op e1 e2 env mem
@@ -94,6 +100,19 @@ let rec eval_expr e env mem =
               (InN(0),mem)
             else (InN(1),mem)
           )
+          |Alloc -> 
+            let (val_expr,mem_expr) = eval_expr e env mem in
+            let n = int_of_value val_expr in
+            let (addr,mem_alloc) = allocn mem_expr n in
+            (InB(addr,n),mem_alloc)
+          |Len -> 
+            (match e with 
+              ASTId x ->
+              (match  (inEnv x env)with
+                InB(a,n) -> (InN(n),mem)
+                |_ -> failwith("must be InB(a,n)") 
+              )
+            )
     )
     | ASTIf (cond, e1, e2) -> (
       let (cond_val,cond_mem) = eval_expr cond env mem in
@@ -126,50 +145,70 @@ and eval_exprs exprs l env mem=
                         eval_exprs ex (v::l) env new_mem 
 
 and eval_op op e1 e2 env mem=
-  let (v1,m1) = eval_expr e1 env mem in 
-  let (v2,m2) = eval_expr e2 env mem in
+ 
   match op with
-    Add -> (InN(int_of_value (v1) + int_of_value(v2)),mem)
-    | Mul -> (InN(int_of_value (v1) * int_of_value(v2)),mem)
-    | Sub -> (InN(int_of_value (v1) - int_of_value(v2)),mem)
-    | Div -> (InN(int_of_value (v1) / int_of_value(v2)),mem)
+    Add -> 
+      let (v1,m1) = eval_expr e1 env mem in 
+      let (v2,m2) = eval_expr e2 env mem in
+      (InN(int_of_value (v1) + int_of_value(v2)),mem)
+    | Mul ->
+      let (v1,m1) = eval_expr e1 env mem in 
+      let (v2,m2) = eval_expr e2 env mem in
+      (InN(int_of_value (v1) * int_of_value(v2)),mem)
+    | Sub ->
+      let (v1,m1) = eval_expr e1 env mem in 
+      let (v2,m2) = eval_expr e2 env mem in
+      (InN(int_of_value (v1) - int_of_value(v2)),mem)
+    | Div ->
+      let (v1,m1) = eval_expr e1 env mem in 
+      let (v2,m2) = eval_expr e2 env mem in
+      (InN(int_of_value (v1) / int_of_value(v2)),mem)
     | Or -> (
+        let (v1,m1) = eval_expr e1 env mem in 
+        let (v2,m2) = eval_expr e2 env mem in
         if int_of_value (v1) + int_of_value(v2) > 0 then (*une des deux expr est vraie et vaut 1, donc >0 en tout*)
           (InN(1),mem)
         else (InN(0),mem)
     )
     | And -> (
+        let (v1,m1) = eval_expr e1 env mem in 
+        let (v2,m2) = eval_expr e2 env mem in
         if int_of_value (v1) + int_of_value(v2) = 2 then (*les deux expr sont vraies donc valent 1 donc 2 en tout*)
           (InN(1),mem)
         else (InN(0),mem)
     )
     | Eq -> (
+        let (v1,m1) = eval_expr e1 env mem in 
+        let (v2,m2) = eval_expr e2 env mem in
       if int_of_value (v1) = int_of_value(v2) then
         (InN(1),mem)
       else (InN(0),mem)
     )
     | Lt -> (
+        let (v1,m1) = eval_expr e1 env mem in 
+        let (v2,m2) = eval_expr e2 env mem in
       if int_of_value (v1) < int_of_value(v2) then 
         (InN(1),mem)
       else (InN(0),mem)
     )
+    | Nth -> (
+    (match eval_expr e1 env mem with
+          (InA(a),m1) -> (match eval_expr e2 env m1 with 
+                        (InN(i),m2) -> (value_of_ina m2 (InA(i+a)),m2)
+          )
+        ) 
+    )
 
-    (**
-     let val_ = inEnv name env in let eval_e = eval_expr e env mem in
-                        (match val_ with 
-                          InA(i) -> (writeInMem mem (InA(i)) eval_e)::mem
-                          |_ -> failwith (name^" not declared as a variable")
-                        )
-    
-    *)
+
+ 
 and eval_stat s env mem =
     match s with
     ASTEcho e -> ( match eval_expr e env mem with
                    (InN(n),m) -> print_int n; print_string "\n"; m
                    |_ -> failwith "ne s'applique que sur les entiers")
     |ASTSet(lval,e) -> let (eval_e,emem) = eval_expr e env mem in
-                        let (addr,mval) = eval_lval lval env mem in 
-                         (writeInMem mem (InA(addr)) eval_e)::mval
+                        let (addr,vmem) = eval_lval lval env emem in 
+                        ((InA(addr)),eval_e)::vmem
     |ASTIF(e,bk1,bk2) ->  let (eval_e,emem) = eval_expr e env mem in
                           if int_of_value (eval_e) = 1 
                           then eval_block bk1 env emem
@@ -189,16 +228,20 @@ and eval_stat s env mem =
                           )
 
 and eval_lval lval env mem = 
+  
   match lval with
    ASTLvalId name -> let v = inEnv name env in 
                     (match v with
                     InA(a) -> (a,mem)
-                    |InB(a,n) -> (int_of_value a,mem))
-  (* |ASTLvalNth(lv,e) -> *)
-
-
-
-
+                    |InB(a,n) ->((int_of_address a),mem) (* address is 0*)
+                    )
+  | ASTLvalNth(lv,e)-> 
+    let (a,mem_lv) = eval_lval lv env mem in
+    let (eval_e,mem_e) = eval_expr e env mem_lv in
+    (match eval_e with
+      InN(i) -> ((a+i),mem_e)
+    )
+  
 and eval_dec d env mem = 
     match d with
       ASTConst(name, t, e) -> let (eval_e,emem) = eval_expr e env mem in
