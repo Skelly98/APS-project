@@ -14,6 +14,13 @@ type memoire = (valeur * valeur) list
 
 let adress_id = ref 0 (* incrémente *)
 
+let size = ref []
+
+let rec get_size name tab =
+  match tab with
+  [] -> failwith("id not found")
+  |(x,n):: t -> if name = x then n else get_size name t 
+
 let int_of_address a = 
   match a with 
   InA(i) -> i
@@ -43,7 +50,7 @@ let rec allocn mem n =
 let rec value_of_ina mem a =
   match mem with 
   [] -> failwith("address undefined : value : "^(string_of_int (int_of_address a)))
-  |(InA(i),v) ::t -> if (int_of_address a) = i 
+  |(InA(i),v) ::t ->  if (int_of_address a) = i 
                       then v
                       else value_of_ina t a 
 
@@ -86,7 +93,7 @@ let rec eval_expr e env mem =
     | ASTFalse -> (InN(0),mem)
     | ASTId x -> (match (inEnv x env) with 
                   InA i -> (value_of_ina mem (InA(i)),mem)
-                  |InB(a,n) -> (a,mem)
+                  |InB(a,n) -> size := (x,n)::(!size) ;(a,mem)
                   | v ->  (v,mem)
     )
     | ASTPrim (op, e1, e2) -> (
@@ -103,15 +110,11 @@ let rec eval_expr e env mem =
           |Alloc -> 
             let (val_expr,mem_expr) = eval_expr e env mem in
             let n = int_of_value val_expr in
-            let (addr,mem_alloc) = allocn mem_expr n in
+            let (addr,mem_alloc) = allocn mem_expr n in 
             (InB(addr,n),mem_alloc)
           |Len -> 
             (match e with 
-              ASTId x ->
-              (match  (inEnv x env)with
-                InB(a,n) -> (InN(n),mem)
-                |_ -> failwith("must be InB(a,n)") 
-              )
+              ASTId x -> (InN(get_size x !size),mem)
             )
     )
     | ASTIf (cond, e1, e2) -> (
@@ -192,12 +195,19 @@ and eval_op op e1 e2 env mem=
       else (InN(0),mem)
     )
     | Nth -> (
-    (match eval_expr e1 env mem with
+      match eval_expr e1 env mem with
           (InA(a),m1) -> (match eval_expr e2 env m1 with 
                         (InN(i),m2) -> (value_of_ina m2 (InA(i+a)),m2)
+                        |(InA(i),m2) -> failwith ("sfsf")
+          |_ -> failwith("f")
           )
-        ) 
-    )
+      (*    |(InB(a,n),m1) -> (match eval_expr e2 env m1 with 
+                              (InN(i),m2) -> let u = (int_of_address a)+i in
+                                (value_of_ina m2 (InA(u)),m2)
+                              ) *)
+
+      ) 
+    
 
 
  
@@ -233,7 +243,7 @@ and eval_lval lval env mem =
    ASTLvalId name -> let v = inEnv name env in 
                     (match v with
                     InA(a) -> (a,mem)
-                    |InB(a,n) ->((int_of_address a),mem) (* address is 0*)
+                    |InB(a,n) ->((int_of_address a),mem) 
                     )
   | ASTLvalNth(lv,e)-> 
     let (a,mem_lv) = eval_lval lv env mem in
