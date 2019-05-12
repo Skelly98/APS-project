@@ -1,0 +1,7 @@
+[
+  VAR x int;
+  VAR z int;
+  SET z 999999;
+  ECHO x;
+  ECHO z
+]

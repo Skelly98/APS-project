@@ -104,8 +104,8 @@ let rec eval_expr e env mem =
           Not -> (
             let (val_expr,mem_expr) = eval_expr e env mem in
             if int_of_value (val_expr) = 1 then
-              (InN(0),mem)
-            else (InN(1),mem)
+              (InN(0),mem_expr)
+            else (InN(1),mem_expr)
           )
           |Alloc -> 
             let (val_expr,mem_expr) = eval_expr e env mem in
@@ -130,7 +130,7 @@ let rec eval_expr e env mem =
 
     | ASTApp (e, es) -> ( 
       let (val_e,val_mem) = eval_expr e env mem in
-      let (vals_list,mem_n) = eval_exprs es [] env val_mem in (*i need a list of the value of each expr and the final state of memory*)
+      let (vals_list,mem_n) = eval_exprs es [] env val_mem in
       match val_e with
           InF (e,param,env_) ->  (
             eval_expr e (List.append (List.combine param vals_list) env_) mem_n
@@ -152,54 +152,56 @@ and eval_op op e1 e2 env mem=
   match op with
     Add -> 
       let (v1,m1) = eval_expr e1 env mem in 
-      let (v2,m2) = eval_expr e2 env mem in
-      (InN(int_of_value (v1) + int_of_value(v2)),mem)
+      let (v2,m2) = eval_expr e2 env m1 in
+      (InN(int_of_value (v1) + int_of_value(v2)),m2)
     | Mul ->
       let (v1,m1) = eval_expr e1 env mem in 
-      let (v2,m2) = eval_expr e2 env mem in
-      (InN(int_of_value (v1) * int_of_value(v2)),mem)
+      let (v2,m2) = eval_expr e2 env m1 in
+      (InN(int_of_value (v1) * int_of_value(v2)),m2)
     | Sub ->
       let (v1,m1) = eval_expr e1 env mem in 
-      let (v2,m2) = eval_expr e2 env mem in
-      (InN(int_of_value (v1) - int_of_value(v2)),mem)
+      let (v2,m2) = eval_expr e2 env m1 in
+      (InN(int_of_value (v1) - int_of_value(v2)),m2)
     | Div ->
       let (v1,m1) = eval_expr e1 env mem in 
-      let (v2,m2) = eval_expr e2 env mem in
-      (InN(int_of_value (v1) / int_of_value(v2)),mem)
+      let (v2,m2) = eval_expr e2 env m1 in
+      (InN(int_of_value (v1) / int_of_value(v2)),m2)
     | Or -> (
         let (v1,m1) = eval_expr e1 env mem in 
-        let (v2,m2) = eval_expr e2 env mem in
+        let (v2,m2) = eval_expr e2 env m1 in
         if int_of_value (v1) + int_of_value(v2) > 0 then (*une des deux expr est vraie et vaut 1, donc >0 en tout*)
-          (InN(1),mem)
-        else (InN(0),mem)
+          (InN(1),m2)
+        else (InN(0),m2)
     )
     | And -> (
         let (v1,m1) = eval_expr e1 env mem in 
-        let (v2,m2) = eval_expr e2 env mem in
+        let (v2,m2) = eval_expr e2 env m1 in
         if int_of_value (v1) + int_of_value(v2) = 2 then (*les deux expr sont vraies donc valent 1 donc 2 en tout*)
-          (InN(1),mem)
-        else (InN(0),mem)
+          (InN(1),m2)
+        else (InN(0),m2)
     )
     | Eq -> (
         let (v1,m1) = eval_expr e1 env mem in 
-        let (v2,m2) = eval_expr e2 env mem in
+        let (v2,m2) = eval_expr e2 env m1 in
       if int_of_value (v1) = int_of_value(v2) then
-        (InN(1),mem)
-      else (InN(0),mem)
+        (InN(1),m2)
+      else (InN(0),m2)
     )
     | Lt -> (
         let (v1,m1) = eval_expr e1 env mem in 
-        let (v2,m2) = eval_expr e2 env mem in
+        let (v2,m2) = eval_expr e2 env m1 in
       if int_of_value (v1) < int_of_value(v2) then 
-        (InN(1),mem)
-      else (InN(0),mem)
+        (InN(1),m2)
+      else (InN(0),m2)
     )
     | Nth -> (
       match eval_expr e1 env mem with
           (InA(a),m1) -> (match eval_expr e2 env m1 with 
-                        (InN(i),m2) ->(value_of_ina m2 (InA(i+a)),m2)
+                        (InN(i),m2) -> (value_of_ina m2 (InA(i+a)),m2)
           )
-          |(InN(i),m1)-> (InN(i),m1)
+          |(InN(a),m1)-> (match eval_expr e2 env m1 with 
+                          (InN(i),m2) ->(value_of_ina m2 (InA(i)),m2)
+          )
       )
     
 

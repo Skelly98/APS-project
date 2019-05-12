@@ -15,7 +15,6 @@
       ]
     ]  
   ];
-
   CONST xs (vec int) (alloc 5);
   SET (nth xs 0) 6;
   SET (nth xs 1) 5;
