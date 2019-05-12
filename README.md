@@ -1,3 +1,5 @@
+usage  :  ./aps.sh  exemple/prog200.aps
+
 TO DO
 
 
