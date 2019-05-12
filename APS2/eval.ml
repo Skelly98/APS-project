@@ -284,6 +284,7 @@ and eval_prog p env mem =
     ASTProg cmds -> eval_cmds cmds env mem
 
 
+(* eval tout
 
 let rec eval_list = function 
 [] -> exit 0
@@ -299,6 +300,13 @@ let rec eval_list = function
 
 let _ = 
   let arr = Sys.readdir "exemple" in
-    eval_list (Array.to_list arr)
+    eval_list (Array.to_list arr) *)
+
+let _ =
+  let oc = open_in Sys.argv.(1) in 
+  let lexbuf = Lexing.from_channel oc in
+  let p = Parser.prog Lexer.token lexbuf in
+  eval_prog p [] [];
+  print_char '\n'
         
      

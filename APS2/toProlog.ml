@@ -246,8 +246,10 @@ let rec print_expr e =
       ASTProg cmds -> (
         Printf.printf("prog(cmds([");
         print_cmds cmds;
-        Printf.printf("]))")
+        Printf.printf("])).")
       )
+
+(* prints all progs in example folder
 
 let rec print_list = function 
 [] -> exit 0
@@ -263,8 +265,14 @@ let rec print_list = function
 let _ = 
   let arr = Sys.readdir "exemple" in
     print_list (Array.to_list arr)
-  
+*)
 
+(* prints prog specified in commandline arguments*)
+let _ =
+  let oc = open_in Sys.argv.(1) in 
+  let lexbuf = Lexing.from_channel oc in
+  let p = Parser.prog Lexer.token lexbuf in
+  print_prog p
 
         
      
