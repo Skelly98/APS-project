@@ -214,7 +214,7 @@ and eval_stat s env mem =
                    |_ -> failwith "ne s'applique que sur les entiers")
     |ASTSet(lval,e) ->  let (eval_e,emem) = eval_expr e env mem in
                         let (addr,vmem) = eval_lval lval env emem in 
-                        ((InA(addr)),eval_e)::vmem
+                         ((InA(addr)),eval_e)::vmem
     |ASTIF(e,bk1,bk2) ->  let (eval_e,emem) = eval_expr e env mem in
                           if int_of_value (eval_e) = 1 
                           then eval_block bk1 env emem
@@ -239,7 +239,7 @@ and eval_lval lval env mem =
    ASTLvalId name -> let v = inEnv name env in 
                     (match v with
                     InA(a) -> (a,mem)
-                    |InB(a,n) ->((int_of_address a),mem) 
+                    |InB(a,n) -> ((int_of_address a),mem) 
                     )
   | ASTLvalNth(lv,e)-> 
     let (a,mem_lv) = eval_lval lv env mem in

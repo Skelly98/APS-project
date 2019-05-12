@@ -11,6 +11,10 @@ appTypeExpr(G,[E |Tail],List,[T | Result]) :- typeExpr(G,E,T),appTypeExpr(G,Tail
 appTypeExpr(_,[],List,List).
 
 
+typeT(int).
+typeT(bool).
+
+
 typeExpr(_,true,bool).
 typeExpr(_,false,bool).
 typeExpr(G,not(X),bool) :- typeExpr(G,X,bool). 
@@ -40,6 +44,13 @@ typeDec(G,fun(X,T,args(A),E),[(X,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes)
 %FUNREC
 typeDec(G,funRec(X,T,args(A),E),[(X,arrow(ArgsRes,T)) | G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeExpr([(X,arrow(ArgsRes,T)) | NewContext],E,T).
 
+%FUNRET
+typeDec(G,funRet(X,T,args(A),block(cmds(CS))),[(X,arrow(ArgsRes,T))| G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeCmds(NewContext,CS,T).
+
+%FUNRETREC
+typeDec(G,funRecRet(X,T,args(A),block(cmds(CS))),[(X,arrow(ArgsRes,T))| G]) :- appArg(A,[],ArgsRes),appendContext(A,G,NewContext),typeCmds([(X,arrow(ArgsRes,T))|NewContext],CS,T).
+
+
 %VAR
 typeDec(G,var(X,T),[(X,T) | G ]).
 
@@ -51,8 +62,17 @@ typeDec(G,procRec(X,args(A),block(cmds(CS))),[(X,arrow(ArgsRes,void))| G]) :- ap
 
 
 typeCmds(_,[],void).
-typeCmds(G,[S|CS],void) :- typeStat(G,S,void), typeCmds(G,CS,void).
+typeCmds(_,[],T) :- typeT(T).
+typeCmds(G,[S|CS],void) :- typeStat(G,S,T), typeCmds(G,CS,T).
+typeCmds(G,[S|CS],T) :- typeStat(G,S,void), typeCmds(G,CS,T),typeT(T).
+typeCmds(G,[S|CS],T) :- typeStat(G,S,void), typeCmds(G,CS,T), T == void.
+typeCmds(G,[S|CS],T) :- typeStat(G,S,(T,void)), typeCmds(G,CS,T),typeT(T), T \== void.
 typeCmds(G,[D|CS],void) :- typeDec(G,D,NG), typeCmds(NG,CS,void).
+%RET
+typeCmds(G,[return(E)],T) :- typeExpr(G,E,T).
+
+
+
 
 %ECHO
 typeStat(G,echo(X),void) :- typeExpr(G,X,int).
@@ -61,12 +81,21 @@ typeStat(G,echo(X),void) :- typeExpr(G,X,int).
 typeStat(G,set(LVAL,E),void) :- typeExpr(G,LVAL,T),typeExpr(G,E,T).
 
 %IF
-typeStat(G,if1(E,block(cmds(Block1)),block(cmds(Block2))),void) :- typeExpr(G,E,bool),typeCmds(G,Block1,void),typeCmds(G,Block2,void).
+
+typeStat(G,if1(E,block(cmds(Block1)),block(cmds(Block2))),T) :- typeExpr(G,E,bool),typeCmds(G,Block1,T1),typeCmds(G,Block2,T2),typeT(T1),typeT(T2),typeT(T).
+
+typeStat(G,if1(E,block(cmds(Block1)),block(cmds(Block2))),(T2,void)) :- typeExpr(G,E,bool),typeCmds(G,Block1,void),typeCmds(G,Block2,T2), T2 \== void.
+
+typeStat(G,if1(E,block(cmds(Block1)),block(cmds(Block2))),(T1,void)) :- typeExpr(G,E,bool),typeCmds(G,Block1,T1),typeCmds(G,Block2,void), T1 \== void.
+
 
 %WHILE
-typeStat(G,while(E,block(cmds(Block))),void) :- typeExpr(G,E,bool),typeCmds(G,Block,void).
+typeStat(G,while(E,block(cmds(Block))),(T,void)) :- typeExpr(G,E,bool),typeCmds(G,Block,T),typeT(T).
+typeStat(G,while(E,block(cmds(Block))),void) :- typeExpr(G,E,bool),typeCmds(G,Block,T), T == void.
 
-%CALL
+%CALL 
 typeStat(G,call(ID,L),void) :- appTypeExpr(G,L,[],TypeRes),atom_string(ID,X),assoc(X,G,arrow(TypeRes,void)).
+
+
 
 typeProg(G,prog(cmds(X)),void) :- typeCmds(G,X,void).

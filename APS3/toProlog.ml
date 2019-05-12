@@ -180,7 +180,8 @@ let rec print_expr e =
         Printf.printf",";
         Printf.printf("block(cmds([");
         print_cmds c;
-        Printf.printf("]))")
+        Printf.printf("]))");
+        Printf.printf")"
       |ASTFunRecRet(name,t,a,c) ->
         Printf.printf"funRecRet(";
         Printf.printf"\"%s\"," name;
@@ -192,7 +193,8 @@ let rec print_expr e =
         Printf.printf",";
         Printf.printf("block(cmds([");
         print_cmds c;
-        Printf.printf("]))")
+        Printf.printf("]))");
+        Printf.printf")"
 
   and print_stat s =
     match s with
