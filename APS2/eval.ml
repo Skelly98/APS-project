@@ -128,10 +128,10 @@ let rec eval_expr e env mem =
         (InF(e,(getNameArgs [] args),env),mem)
     )
 
-    | ASTApp (e, es) -> (
+    | ASTApp (e, es) -> ( 
       let (val_e,val_mem) = eval_expr e env mem in
       let (vals_list,mem_n) = eval_exprs es [] env val_mem in (*i need a list of the value of each expr and the final state of memory*)
-        match val_e with
+      match val_e with
           InF (e,param,env_) ->  (
             eval_expr e (List.append (List.combine param vals_list) env_) mem_n
           )
@@ -197,16 +197,10 @@ and eval_op op e1 e2 env mem=
     | Nth -> (
       match eval_expr e1 env mem with
           (InA(a),m1) -> (match eval_expr e2 env m1 with 
-                        (InN(i),m2) -> (value_of_ina m2 (InA(i+a)),m2)
-                        |(InA(i),m2) -> failwith ("sfsf")
-          |_ -> failwith("f")
+                        (InN(i),m2) ->(value_of_ina m2 (InA(i+a)),m2)
           )
-      (*    |(InB(a,n),m1) -> (match eval_expr e2 env m1 with 
-                              (InN(i),m2) -> let u = (int_of_address a)+i in
-                                (value_of_ina m2 (InA(u)),m2)
-                              ) *)
-
-      ) 
+          |(InN(i),m1)-> (InN(i),m1)
+      )
     
 
 
@@ -216,7 +210,7 @@ and eval_stat s env mem =
     ASTEcho e -> ( match eval_expr e env mem with
                    (InN(n),m) -> print_int n; print_string "\n"; m
                    |_ -> failwith "ne s'applique que sur les entiers")
-    |ASTSet(lval,e) -> let (eval_e,emem) = eval_expr e env mem in
+    |ASTSet(lval,e) ->  let (eval_e,emem) = eval_expr e env mem in
                         let (addr,vmem) = eval_lval lval env emem in 
                         ((InA(addr)),eval_e)::vmem
     |ASTIF(e,bk1,bk2) ->  let (eval_e,emem) = eval_expr e env mem in
@@ -251,7 +245,7 @@ and eval_lval lval env mem =
     (match eval_e with
       InN(i) -> ((a+i),mem_e)
     )
-  
+
 and eval_dec d env mem = 
     match d with
       ASTConst(name, t, e) -> let (eval_e,emem) = eval_expr e env mem in

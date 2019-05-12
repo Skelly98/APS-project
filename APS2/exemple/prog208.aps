@@ -13,5 +13,4 @@
   SET (nth xs 2) false;
   SET (nth xs 3) true;
   CALL map [x:bool](not x) xs
-
 ]
