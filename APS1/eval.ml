@@ -195,24 +195,6 @@ and eval_prog p env mem =
     ASTProg cmds -> eval_cmds cmds env mem
 
 
-(*
-let rec eval_list = function 
-[] -> exit 0
-| e::l ->   let oc = open_in ("exemple/"^e) in 
-            let lexbuf = Lexing.from_channel oc in
-            let p = Parser.prog Lexer.token lexbuf in
-              print_string e;
-              print_char '\n';
-              adress_id := 0;
-              eval_prog p [] [];
-              print_char '\n';
-              eval_list l
-
-let _ = 
-  let arr = Sys.readdir "exemple" in
-    eval_list (Array.to_list arr)
-      *)  
-     
 
       let _ =
         let oc = open_in Sys.argv.(1) in 

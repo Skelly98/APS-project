@@ -19,9 +19,11 @@ let size = ref []
 
 let id = ref (InA(-1))
 
+let tmp = ref 0
+
 let rec get_size name tab =
   match tab with
-  [] -> failwith("id not found")
+  [] -> !tmp
   |(x,n):: t -> if name = x then n else get_size name t 
 
 let int_of_address a = 
