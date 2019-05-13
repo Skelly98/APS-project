@@ -58,8 +58,8 @@ open Ast
     |VAR IDENT type_ { ASTVar($2,$3) }
     |PROC IDENT LSQUARE args RSQUARE block { ASTProc($2,$4,$6) }
     |PROC REC IDENT LSQUARE args RSQUARE block { ASTProcRec($3,$5,$7) }
-    |FUN IDENT type_ LSQUARE args RSQUARE LSQUARE cmds RSQUARE { ASTFunRet($2,$3,$5,$8) }
-    |FUN REC IDENT type_ LSQUARE args RSQUARE LSQUARE cmds RSQUARE{ ASTFunRecRet($3,$4,$6,$9) } 
+    |FUN IDENT type_ LSQUARE args RSQUARE block { ASTFunRet($2,$3,$5,$7) }
+    |FUN REC IDENT type_ LSQUARE args RSQUARE block { ASTFunRecRet($3,$4,$6,$8) } 
 
   type_ :
      INT {ASTInt}

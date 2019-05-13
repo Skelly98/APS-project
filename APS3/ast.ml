@@ -73,8 +73,8 @@ let op_of_string op =
       |ASTVar of string * type_
       |ASTProc of string * args * block 
       |ASTProcRec of string * args * block
-      |ASTFunRet of string * type_ * args * cmds
-      |ASTFunRecRet of string * type_ * args * cmds
+      |ASTFunRet of string * type_ * args * block
+      |ASTFunRecRet of string * type_ * args * block
 
   and stat =
       ASTEcho of expr 

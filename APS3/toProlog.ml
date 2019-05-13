@@ -178,9 +178,7 @@ let rec print_expr e =
         print_args a;
         Printf.printf"])";
         Printf.printf",";
-        Printf.printf("block(cmds([");
-        print_cmds c;
-        Printf.printf("]))");
+        print_block c;
         Printf.printf")"
       |ASTFunRecRet(name,t,a,c) ->
         Printf.printf"funRecRet(";
@@ -191,9 +189,7 @@ let rec print_expr e =
         print_args a;
         Printf.printf"])";
         Printf.printf",";
-        Printf.printf("block(cmds([");
-        print_cmds c;
-        Printf.printf("]))");
+        print_block c;
         Printf.printf")"
 
   and print_stat s =
