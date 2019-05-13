@@ -279,25 +279,15 @@ let rec print_expr e =
       ASTProg cmds -> (
         Printf.printf("prog(cmds([");
         print_cmds cmds;
-        Printf.printf("]))")
+        Printf.printf("])).")
       )
 
-let rec print_list = function 
-[] -> exit 0
-| e::l ->   let oc = open_in ("exemple/"^e) in 
-            let lexbuf = Lexing.from_channel oc in
-            let p = Parser.prog Lexer.token lexbuf in
-              print_string e;
-              print_char '\n';
-              print_prog p;
-              print_char '\n';
-              print_list l
-
-let _ = 
-  let arr = Sys.readdir "exemple" in
-    print_list (Array.to_list arr)
-  
-
-
+      let _ =
+        let oc = open_in Sys.argv.(1) in 
+        let lexbuf = Lexing.from_channel oc in
+        let p = Parser.prog Lexer.token lexbuf in
+        print_prog p
+      
+              
         
      

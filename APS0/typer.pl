@@ -41,3 +41,13 @@ typeCmds(G,[D|CS],void) :- typeDec(G,D,NG), typeCmds(NG,CS,void).
 typeStat(G,echo(X),void) :- typeExpr(G,X,int).
 
 typeProg(G,prog(cmds(X)),void) :- typeCmds(G,X,void).
+
+%main
+checker :-
+	read(user_input,T),
+	( typeProg([],T,void)
+		-> R = true
+		; R = false
+	),
+	print(R),
+	nl.

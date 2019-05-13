@@ -16,10 +16,12 @@ let adress_id = ref 0 (* incrémente *)
 
 let size = ref []
 
+let tmp = ref 0
+
 let rec get_size name tab =
   match tab with
-  [] -> failwith("id not found")
-  |(x,n):: t -> if name = x then n else get_size name t 
+  [] -> !tmp
+  |(x,n):: t -> if name = x then n else(get_size name t )
 
 let int_of_address a = 
   match a with 
@@ -44,6 +46,7 @@ let rec allocn mem n =
     let a = !adress_id in
     let res = allocn_aux a mem n in
     adress_id := !adress_id+n;
+    !tmp = n;
     (InA(a),res)
     
     

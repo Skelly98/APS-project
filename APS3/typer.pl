@@ -96,6 +96,16 @@ typeStat(G,while(E,block(cmds(Block))),void) :- typeExpr(G,E,bool),typeCmds(G,Bl
 %CALL 
 typeStat(G,call(ID,L),void) :- appTypeExpr(G,L,[],TypeRes),atom_string(ID,X),assoc(X,G,arrow(TypeRes,void)).
 
-
-
 typeProg(G,prog(cmds(X)),void) :- typeCmds(G,X,void).
+
+
+
+%main
+checker :-
+	read(user_input,T),
+	( typeProg([],T,void)
+		-> R = true
+		; R = false
+	),
+	print(R),
+	nl.
